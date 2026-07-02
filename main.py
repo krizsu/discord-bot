@@ -23,6 +23,7 @@ async def on_ready():
 async def main():
     async with bot:
         await bot.load_extension("cogs.general")
+        await bot.load_extension("cogs.music")
         await bot.start(TOKEN)
 
 asyncio.run(main())
