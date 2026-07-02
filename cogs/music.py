@@ -22,5 +22,16 @@ class Music(commands.Cog):
         await channel.connect()
         await interaction.response.send_message(f"joined {channel.name}")
 
+    @app_commands.command(name="leave", description="disconnect the bot from vc")
+    async def leave(self, interaction: discord.Interaction):
+        voice_client = interaction.guild.voice_client
+
+        if voice_client is None:
+            await interaction.response.send_message("the bot has to be in vc")
+            return
+        
+        await voice_client.disconnect()
+        await interaction.response.send_message("left the vc")
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(Music(bot))
