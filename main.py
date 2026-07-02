@@ -4,6 +4,9 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
+if not discord.opus.is_loaded():
+    discord.opus.load_opus("/opt/homebrew/opt/opus/lib/libopus.dylib")
+
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 SERVER_ID = int(os.getenv("SERVER_ID"))
