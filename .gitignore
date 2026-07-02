@@ -1,2 +1,4 @@
 .env
 .DS_STORE
+cogs/__pycache__
+cogs/__init__.py
