@@ -95,5 +95,66 @@ class Music(commands.Cog):
             if self.text_channel:
                 await self.text_channel.send(f"now playing: {self.queue[0]["title"]}")
 
+    @app_commands.command(name="skip", description="skip the current song")
+    async def skip(self, interaction : discord.Interaction):
+        voice_client = interaction.guild.voice_client
+        if voice_client is None or not voice_client.is_playing():
+            await interaction.response.send_message("nothing is playing")
+            return
+
+        voice_client.stop()
+        await interaction.response.send_message("skipped")
+
+    @app_commands.command(name="pause", description="pause playback")
+    async def pause(self, interaction : discord.Interaction):
+        voice_client = interaction.guild.voice_client
+        if voice_client is None or not voice_client.is_playing():
+            await interaction.response.send_message("nothing is playing")
+            return
+        
+        voice_client.pause()
+        await interaction.response.send_message("paused")
+
+    @app_commands.command(name="resume", description="resume playback")
+    async def resume(self, interaction : discord.Interaction):
+        voice_client = interaction.guild.voice_client
+        if voice_client is None or not voice_client.is_paused():
+            await interaction.response.send_message("nothing is paused")
+            return
+        
+        voice_client.resume()
+        await interaction.response.send_message("resumed")
+    
+    @app_commands.command(name="stop", description="stop playback and clear queue")
+    async def stop(self, interaction : discord.Interaction):
+        voice_client = interaction.guild.voice_client
+        if voice_client is None:
+            await interaction.response.send_message("the bot has to be in vc")
+            return
+
+        self.queue.clear()
+        voice_client.stop()
+        await interaction.response.send_message("stopped and cleared the queue")
+
+    @app_commands.command(name="queue", description="shows the queue")
+    async def show_queue(self, interaction : discord.Interaction):  
+        if not self.queue:
+            await interaction.response.send_message("queue is empty")
+            return
+
+        lines = [f"now playing: {self.queue[0]["title"]}"]
+        if len(self.queue) > 1:
+            lines.append("\nnext in queue: ")
+            for i, song in enumerate(self.queue[1:], start=1):
+                lines.append(f"{i}. {song["title"]}")
+        await interaction.response.send_message("\n".join(lines))
+
+    @app_commands.command(name="nowplaying", description="shows the currently playing song")
+    async def now_playing(self, interaction : discord.Interaction):
+        if not self.queue:
+            await interaction.response.send_message("nothing is playing")
+            return
+        await interaction.response.send_message(f"now playing: {self.queue[0]["title"]}")
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(Music(bot))
