@@ -7,6 +7,8 @@ import asyncio
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.queue : list[dict] = []
+        self.text_channel: discord.TextChannel | None = None
 
     @app_commands.command(name="join", description="makes the bot join your vc")
     async def join(self, interaction: discord.Interaction): 
@@ -32,6 +34,7 @@ class Music(commands.Cog):
             await interaction.response.send_message("the bot has to be in vc")
             return
         
+        self.queue.clear()
         await voice_client.disconnect()
         await interaction.response.send_message("left the vc")
 
@@ -45,6 +48,7 @@ class Music(commands.Cog):
             return
         
         await interaction.response.defer()
+        self.text_channel = interaction.channel
 
         voice_client = interaction.guild.voice_client
         if voice_client is None:
@@ -60,10 +64,36 @@ class Music(commands.Cog):
         track = await asyncio.to_thread(extract)
         url = track["url"]
         title = track["title"]
+        self.queue.append({"url": url, "title": title})
 
-        source = discord.FFmpegPCMAudio(url, **self.FFMPEG_OPTIONS)
-        voice_client.play(source)
-        await interaction.followup.send(f"now playing: {title}")
+        if voice_client.is_playing() or voice_client.is_paused():
+            await interaction.followup.send(f"added to queue:  {title}")
+        else:
+            await interaction.followup.send(f"now playing: {title}")
+            await self.start_playing(voice_client)
+
+    async def start_playing(self, voice_client: discord.VoiceClient):
+        if not self.queue:
+            return
+        
+        song = self.queue[0]
+        source = discord.FFmpegPCMAudio(song["url"], **self.FFMPEG_OPTIONS)
+
+        def after_playing(error):
+            if error:
+                print(f"error while playing: {error}")
+            if self.queue:
+                self.queue.pop(0)
+            coro = self.play_next(voice_client)
+            asyncio.run_coroutine_threadsafe(coro, self.bot.loop)
+        
+        voice_client.play(source, after=after_playing)
+    
+    async def play_next(self, voice_client: discord.VoiceClient):
+        if self.queue:
+            await self.start_playing(voice_client)
+            if self.text_channel:
+                await self.text_channel.send(f"now playing: {self.queue[0]["title"]}")
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Music(bot))
